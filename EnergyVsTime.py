@@ -892,6 +892,9 @@ plt.plot(xdata, mountDeposit, label="Mount Energy Deposit")
 plt.plot(xdata, qpMark, label="Markings Quasiparticle Energy")
 leg = plt.legend(loc='upper right', shadow=True, fancybox=True)
 leg.get_frame().set_alpha(0.5)
+
+ax = plt.gca()
+ax.set_ylim([1, exp(7)])
 plt.show()
 
 
