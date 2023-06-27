@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.colors
-
+ 
 # makes several plots of the total energy vs time, qp energy in the inductors/capacitors/feedline,
 # and the flux in and out of the inds, caps, and feedline.
 
