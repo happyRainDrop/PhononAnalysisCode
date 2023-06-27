@@ -111,7 +111,8 @@ partVols = []
 partParents = []
 
 partTotal = []
-subpTotal = []
+maxPhononEnergy = []    # Max energy of any given phonon/time
+subpTotal = []          
 subniobTotal = []
 superpTotal = []
 
@@ -295,7 +296,7 @@ with open(path) as f:
             electrodeData[event_id][qpcount][2].append(deltaGain)
         qpcount += 1
 
-# xlen = int(largest_time / dt)
+# xlen = int(largest_time / dt). It's the number of time bins we have
 xlen = min(int(largest_time / dt), int(max_time / dt) - 1)
 fluxlen = min(int(largest_time / fluxdt), int(max_time / fluxdt) - 1)
 # xlen = 1000
@@ -488,6 +489,7 @@ for i in range(fluxlen + 1):
 
 for i in range(xlen + 1):
     partTotal.append(0)
+    maxPhononEnergy.append(0)
     subniobTotal.append(0)
     subpTotal.append(0)
     superpTotal.append(0)
@@ -596,12 +598,15 @@ qpEnergyGain /= float(num_events)
 # iterate through IDs to see what time interval and energy interval the step belongs in
 for i in range(num_events):
     part = np.array([])
+    maxPart = np.array([])  # The maximum phonon energy
     subp = np.array([])
     subniob = np.array([])
     superp = np.array([])
+
     print("Analyzing Event " + str(i + 1) + " Particles . . .")
     for j in range(xlen + 1):
         part = np.append(part, [0])
+        maxPart = np.append(part, [0])
         subniob = np.append(subniob, [0])
         subp = np.append(subp, [0])
         superp = np.append(superp, [0])
@@ -623,6 +628,9 @@ for i in range(num_events):
             
             timebint = min(timebint, (xlen + 1))
             part[timeaint:timebint] += cur_energy
+
+            maxPart[timeaint:timebint] = max(max(maxPart[timeaint:timebint]), cur_energy)
+
             if(cur_energy  >= 2 * ngap):
                 superp[timeaint:timebint] += cur_energy
             elif(cur_energy >= 2 * gap_energy):
@@ -632,10 +640,13 @@ for i in range(num_events):
     
     endTotal[i] += part[xlen]
     for j in range(xlen + 1):
-        partTotal[j] += part[j]
-        superpTotal[j] += superp[j]
-        subniobTotal[j] += subniob[j]
-        subpTotal[j] += subp[j]
+        partTotal[j] += part[j]         #The total phonon energy = 
+        superpTotal[j] += superp[j]     #supergap niobium +
+        subniobTotal[j] += subniob[j]   #Supergap(aluminum) to Subgap(niobium) Energy +
+        subpTotal[j] += subp[j]         #Subgap (aluminum) energy
+
+        maxPhononEnergy[j] += maxPart[j]
+
 
 #for energy deposits
 for i in range(xlen + 1):
@@ -729,6 +740,7 @@ for i in range(xlen + 1):
     subniobTotal[i] /= float(num_events)
     superpTotal[i] /= float(num_events)
     partTotal[i] /= float(num_events)
+    maxPhononEnergy[i] /= float(num_events)
 
     qpEnergy[i] /= float(num_events)
     qpIndTotal[i] /= float(num_events)
@@ -822,6 +834,7 @@ plt.ylabel("Energy (meV)")
 plt.plot(xdata, Total, label="Total Energy")
 
 plt.plot(xdata, partTotal, label="Total Particle Energy")
+plt.plot(xdata, maxPhononEnergy, label="Maximum energy of any phonon")
 plt.plot(xdata, subpTotal, label="Subgap(aluminum) Energy")
 plt.plot(xdata, subniobTotal, label="Supergap(aluminum) to Subgap(niobium) Energy")
 plt.plot(xdata, superpTotal, label="Supergap(niobium) Energy")
