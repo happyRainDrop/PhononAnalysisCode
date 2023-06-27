@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.colors
-
+ 
 # makes several plots of the total energy vs time, qp energy in the inductors/capacitors/feedline,
 # and the flux in and out of the inds, caps, and feedline.
 
@@ -909,6 +909,9 @@ plt.plot(xdata, mountDeposit, label="Mount Energy Deposit")
 plt.plot(xdata, qpMark, label="Markings Quasiparticle Energy")
 leg = plt.legend(loc='upper right', shadow=True, fancybox=True)
 leg.get_frame().set_alpha(0.5)
+
+ax = plt.gca()
+ax.set_ylim([1, exp(7)])
 plt.show()
 #####################################################################################
 
