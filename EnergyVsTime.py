@@ -112,6 +112,8 @@ partParents = []
 
 partTotal = []
 maxPhononEnergy = []    # Max energy of any given phonon/time
+averagePhononEnergy = []    # Average energy of any given phonon/time
+
 subpTotal = []          
 subniobTotal = []
 superpTotal = []
@@ -490,6 +492,8 @@ for i in range(fluxlen + 1):
 for i in range(xlen + 1):
     partTotal.append(0)
     maxPhononEnergy.append(0)
+    averagePhononEnergy.append(0)
+    
     subniobTotal.append(0)
     subpTotal.append(0)
     superpTotal.append(0)
@@ -599,6 +603,7 @@ qpEnergyGain /= float(num_events)
 for i in range(num_events):
     part = np.array([])
     maxPart = np.array([])  # The maximum phonon energy
+    numPhonons = np.array([]) # The number of phonons that exist at any given time
     subp = np.array([])
     subniob = np.array([])
     superp = np.array([])
@@ -606,7 +611,6 @@ for i in range(num_events):
     print("Analyzing Event " + str(i + 1) + " Particles . . .")
     for j in range(xlen + 1):
         part = np.append(part, [0])
-        maxPart = np.append(part, [0])
         subniob = np.append(subniob, [0])
         subp = np.append(subp, [0])
         superp = np.append(superp, [0])
@@ -630,6 +634,7 @@ for i in range(num_events):
             part[timeaint:timebint] += cur_energy
 
             maxPart[timeaint:timebint] = max(max(maxPart[timeaint:timebint]), cur_energy)
+            numPhonons[timeaint:timebint] += 1
 
             if(cur_energy  >= 2 * ngap):
                 superp[timeaint:timebint] += cur_energy
@@ -646,6 +651,8 @@ for i in range(num_events):
         subpTotal[j] += subp[j]         #Subgap (aluminum) energy
 
         maxPhononEnergy[j] += maxPart[j]
+        averagePhononEnergy[j] += part[j]/numPhonons[j]
+        
 
 
 #for energy deposits
@@ -741,6 +748,7 @@ for i in range(xlen + 1):
     superpTotal[i] /= float(num_events)
     partTotal[i] /= float(num_events)
     maxPhononEnergy[i] /= float(num_events)
+    averagePhononEnergy[i] /= float(num_events)
 
     qpEnergy[i] /= float(num_events)
     qpIndTotal[i] /= float(num_events)
@@ -826,6 +834,7 @@ print("Primary Capacitor : " + str(primaryCap + 1))
 print("Plotting . . . ")
 
 ax = plt.subplot(111)
+#####################################################################################
 # plt.title(r"Total Energy vs Time" + " (" + str(absProb) + ") ")
 plt.title(r"Total Energy vs Time")
 plt.xlabel("Time (μs)")
@@ -834,7 +843,6 @@ plt.ylabel("Energy (meV)")
 plt.plot(xdata, Total, label="Total Energy")
 
 plt.plot(xdata, partTotal, label="Total Particle Energy")
-plt.plot(xdata, maxPhononEnergy, label="Maximum energy of any phonon")
 plt.plot(xdata, subpTotal, label="Subgap(aluminum) Energy")
 plt.plot(xdata, subniobTotal, label="Supergap(aluminum) to Subgap(niobium) Energy")
 plt.plot(xdata, superpTotal, label="Supergap(niobium) Energy")
@@ -858,7 +866,16 @@ plt.plot(xdata, qpMark, label="Markings Quasiparticle Energy")
 leg = plt.legend(loc='upper right', shadow=True, fancybox=True)
 leg.get_frame().set_alpha(0.5)
 plt.show()
+#####################################################################################
 
+plt.title(r"Individual Phonon Energy vs Time")
+plt.xlabel("Time (μs)")
+plt.ylabel("Energy (meV)")
+plt.plot(xdata, maxPhononEnergy, label="maximum energy of any one phonon")
+plt.plot(xdata, averagePhononEnergy, label="average energy of any one phonon")
+plt.show()
+
+#####################################################################################
 
 plt.title(r"Total Energy vs Time (Semi-Log)")
 plt.xlabel("Time (μs)")
@@ -893,7 +910,7 @@ plt.plot(xdata, qpMark, label="Markings Quasiparticle Energy")
 leg = plt.legend(loc='upper right', shadow=True, fancybox=True)
 leg.get_frame().set_alpha(0.5)
 plt.show()
-
+#####################################################################################
 
 # plt.title(r"Total Energy vs Time (Log-Log)")
 # plt.xlabel("Time (μs)")
@@ -918,7 +935,7 @@ plt.show()
 # leg = plt.legend(loc='upper right', shadow=True, fancybox=True)
 # leg.get_frame().set_alpha(0.5)
 # plt.show()
-
+#####################################################################################
 
 #plot of all inductor qp energy vs time.
 defaultHandle, = plt.plot([0], [0], color = (0, 0, 0, 0))
@@ -962,6 +979,7 @@ kidLegend = kidLegend2
 leg = plt.legend(indHandles, kidLegend, loc='upper right', ncol = numcols, shadow=True, fancybox=True, handlelength=1.0, fontsize='small', columnspacing=0.5)
 leg.get_frame().set_alpha(0.5)
 plt.show()
+#####################################################################################
 
 
 #plot of all inductor qp energy vs time (Semi-Log).
@@ -983,6 +1001,7 @@ plt.plot(phononLifexData, np.exp(phononm * phononLifexData + phononb), color = (
 leg = plt.legend(indHandles, kidLegend, loc='upper right', ncol = numcols, shadow=True, fancybox=True, handlelength=1.0, fontsize='small', columnspacing=0.5)
 leg.get_frame().set_alpha(0.5)
 plt.show()
+#####################################################################################
 
 # #num qps in each ind vs time
 # plt.title(r"Inductor QP Count vs Time (Semi-Log)")
@@ -1008,6 +1027,7 @@ plt.show()
 # leg = plt.legend(indHandles, kidLegend, loc='upper right', ncol = numcols, shadow=True, fancybox=True, handlelength=1.0, fontsize='small', columnspacing=0.5)
 # leg.get_frame().set_alpha(0.5)
 # plt.show()
+#####################################################################################
 
 
 mpxTickLabels = [0, max_graph_time]
@@ -1037,7 +1057,7 @@ plt.subplots_adjust(left = kidPlotConfig[0], bottom = kidPlotConfig[1], right = 
 plt.xlabel("Time (μs)")
 plt.ylabel("Energy (meV)")
 plt.show()
-
+#####################################################################################
 
 
 # #plot of each individual capacitor qp energy vs time
@@ -1066,7 +1086,7 @@ plt.show()
 # plt.xlabel("Time (μs)")
 # plt.ylabel("Energy (meV)")
 # plt.show()
-
+#####################################################################################
 
 #Total Flux Graph
 plt.title(r"Flux vs Time")
@@ -1081,6 +1101,7 @@ plt.plot(fluxdata, outfluxfeed[numFluxBands], label="Feedline Outflux")
 leg = plt.legend(loc='upper right', shadow=True, fancybox=True)
 leg.get_frame().set_alpha(0.5)
 plt.show()
+#####################################################################################
 
 #Inductor Flux Graph
 plt.title(r"Inductor Flux vs Time")
