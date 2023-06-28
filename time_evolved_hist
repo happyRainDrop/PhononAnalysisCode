@@ -1,3 +1,18 @@
+##################################################
+#            time_evolved_hist.py                #
+##################################################
+# Prerequisites for running:
+#    Data/StepData.txt must exist
+#    temp folder should be emptied/deleted
+#        (Unexpected behavior may occur if not)
+# 
+# This script plots a histogram of phonon energies
+# in silicon at small time bins. The histogram from
+# each time bin is combined into a gif at the end
+# (phonon_energy_hist.gif). The snapshots of phonon
+# energy distributions at each time bin are stored
+# in the temp folder.
+
 from math import *
 import numpy as np
 import random
@@ -5,43 +20,40 @@ import matplotlib.pyplot as plt
 import imageio.v3
 import os
 
+######### Here are parameters the user can tweak
 dt = 200   # Units: ??
-de = 0.5
+de = 0.5    # Units: mEv, presumably
+largest_time = 10000   # Manually set this
+        # because most of what happens later on
+        # is not very interesting
+
+######## Here are constants the user shouldn't tweak
 gap_energy = 0.1805
+
+######## Here are variables we fill later on
 numsubgap = 0
-subgap_energy = 0.0
+tot_subgap_energy = 0.0
 total_energy = 0.0
-line_data = []
 phononids = []
-setids = []
 phononEnergies = []
 phononTimes = []
-phononid = 0
 phononEnergy = 0.0
 phononTime = 0.0
 largest_energy = 0.0
-largest_time = 10000
-yspace = 20
-xspace = 100 / dt
-
 phononData = {}
 energyDist = []
-
 xlabel = []
 ylabel = []
 
-numLines = 0
-
-
-print("Collecting data . . . ")
+print("Finding data . . . ")
 directory = "Data/"
 path = directory + "StepData.txt"
 f = open(path, "r")
 lines = f.readlines()
 f.close()
 
-
 print("Parsing data. . . ")
+numLines = 0
 #Add energies for each event
 for i in range(0, len(lines)):
     line = lines[i]
@@ -70,11 +82,11 @@ for i in range(0, len(lines)):
     total_energy += phononEnergy
     if(phononEnergy < 2 * gap_energy):
         numsubgap += 1
-        subgap_energy += phononEnergy
+        tot_subgap_energy += phononEnergy
   
-xlen = int(largest_time / dt)
-# xlen = 1000
-ylen = ceil(largest_energy / de)
+num_time_bins = int(largest_time / dt)
+# num_time_bins = 1000
+num_energy_bins = ceil(largest_energy / de)
 setids = list(set(phononids))
 setids.sort()
 for i in range(len(setids)):
@@ -84,9 +96,9 @@ for i in range(len(phononids)):
     phononData[phononids[i]][0].append(phononEnergies[i])
     phononData[phononids[i]][1].append(phononTimes[i])
 
-for i in range(xlen + 1):
+for i in range(num_time_bins + 1):
     energyDist.append([])
-    for j in range(ylen + 1):
+    for j in range(num_energy_bins + 1):
         energyDist[i].append(0)
 
 #iterate through all phonons
@@ -119,7 +131,7 @@ for ID in phononData:
         timeaint = floor(timea / dt) * dt
         timebint = ceil(timeb / dt) * dt
         cur_energy = pdata[0][i]
-        energyind = ylen - int(cur_energy / de)
+        energyind = num_energy_bins - int(cur_energy / de)
       
         # if(timeaint == 0):
         #     energyDist[0][energyind] += 1
@@ -131,7 +143,7 @@ for ID in phononData:
             # recalc max number of phonons in any one bin
             if energyDist[timeind][energyind]>maxPhononNumInBin:
               maxPhononNumInBin = energyDist[timeind][energyind]
-            # if(timeind < xlen):
+            # if(timeind < num_time_bins):
             #     energyDist[timeind][energyind] += 1
                 # energyDist[timeind][energyind] += cur_energy
 
@@ -143,15 +155,18 @@ for ID in phononData:
 # Find the average energy at each time. 
 # is the curve really moving to the right?
 '''
+plt.scatter(phononTimes, phononEnergies)
+plt.show()
+
 x=[]  # Time
 y=[]  # Avg phonon energy
-for i in range(1,xlen):
+for i in range(1,num_time_bins):
   tot_energy = 0
   num_phonons_this_time = 0
-  for j in range(ylen):
+  for j in range(num_energy_bins):
     num_phonons_this_energy = energyDist[i][j]
     num_phonons_this_time += num_phonons_this_energy
-    tot_energy += num_phonons_this_energy*(ylen-j)*de
+    tot_energy += num_phonons_this_energy*(num_energy_bins-j)*de
     
   av_energy = tot_energy/num_phonons_this_time if num_phonons_this_time>0 else 0
   x.append(i)
@@ -166,15 +181,15 @@ tot_init_energy = energyDist[1][0]
 
 print("Plotting . . . ")
 print("Proportion of subgap phonons: " + str(float(numsubgap) / numLines))
-print("Total Subgap Energy: " + str(subgap_energy) + ", Total Energy: " + str(total_energy))
-print("Subgap Energy Fraction: " + str(float(subgap_energy) / total_energy))
+print("Total Subgap Energy: " + str(tot_subgap_energy) + ", Total Energy: " + str(total_energy))
+print("Subgap Energy Fraction: " + str(float(tot_subgap_energy) / total_energy))
 
 ####################################################################
 # Plot phonon frequency histograms per energy at each time point.
 # Using Mira's pulse_data_analysis as template, turn this into a gif.
 
 start_time_interval=0
-frames=xlen
+frames=num_time_bins
 framename=[]
 for index in range(start_time_interval,start_time_interval+frames):
 
