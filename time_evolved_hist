@@ -1,0 +1,181 @@
+from math import *
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+import imageio.v3
+import os
+
+dt = 2000   # Units: ??
+de = 0.1
+gap_energy = 0.1805
+numsubgap = 0
+subgap_energy = 0.0
+total_energy = 0.0
+line_data = []
+phononids = []
+setids = []
+phononEnergies = []
+phononTimes = []
+phononid = 0
+phononEnergy = 0.0
+phononTime = 0.0
+largest_energy = 0.0
+largest_time = 0.0
+yspace = 20
+xspace = 100 / dt
+
+phononData = {}
+energyDist = []
+
+xlabel = []
+ylabel = []
+
+numLines = 0
+
+
+print("Collecting data . . . ")
+directory = "Data/"
+path = directory + "StepData.txt"
+f = open(path, "r")
+lines = f.readlines()
+f.close()
+
+print("Computing . . . ")
+#Add energies for each event
+for i in range(0, len(lines)):
+    line = lines[i]
+    if(line == "New Event\n"):
+        break
+    
+    numLines += 1
+    line_data = line[:-1].split(",")
+    phononid = int(line_data[0])
+    phononEnergy = float(line_data[1])
+    phononTime = float(line_data[2])
+    if(line_data[3][0] != "p"):  # Only look at phonons!
+        continue
+    if(line_data[5] != "TargetL"):  # Only look at phonons
+        continue                    # in inductors
+    phononids.append(phononid)
+    phononEnergies.append(phononEnergy)
+    phononTimes.append(phononTime)
+    if(phononEnergy > largest_energy):
+        largest_energy = phononEnergy
+    total_energy += phononEnergy
+    if(phononEnergy < 2 * gap_energy):
+        numsubgap += 1
+        subgap_energy += phononEnergy
+    if(phononTime > largest_time):
+        largest_time = phononTime
+
+xlen = int(largest_time / dt)
+# xlen = 1000
+ylen = int(largest_energy / de)
+setids = list(set(phononids))
+setids.sort()
+for i in range(len(setids)):
+    phononData[setids[i]] = [[],[]]
+
+for i in range(len(phononids)):
+    phononData[phononids[i]][0].append(phononEnergies[i])
+    phononData[phononids[i]][1].append(phononTimes[i])
+
+for i in range(xlen + 1):
+    energyDist.append([])
+    for j in range(ylen + 1):
+        energyDist[i].append(0)
+
+#iterate through all phonons
+timea = 0.0
+timeb = 0.0
+timeaint = 0
+timebint = 0
+cur_energy = 0.0
+energyind = 0
+timeind = 0
+pdata = []
+lenp = 0
+
+# iterate through IDs to see what time interval and energy interval the step belongs in
+print("Still Computing . . . ")
+idcounter = 0
+for ID in phononData:
+    idcounter += 1
+    if(idcounter % 1000 == 0):
+        print(idcounter)
+    pdata = phononData[ID]
+    lenp = len(pdata[1])
+    # iterates throug all steps for each phonon
+    # finds the slices of time and the energy that the phonon had at those times and
+    #   increases the counter for that grid location
+    for i in range(lenp - 1):
+        timea = pdata[1][i]
+        timeb = pdata[1][i + 1]
+        timeaint = floor(timea / dt) * dt
+        timebint = floor(timeb / dt) * dt
+        cur_energy = pdata[0][i]
+        energyind = ylen - int(cur_energy / de)
+        # if(timeaint == 0):
+        #     energyDist[0][energyind] += 1
+        #     # energyDist[0][energyind] += cur_energy
+        if(timeaint == timebint):
+            continue
+        for j in range(timeaint, timebint, dt):
+            timeind = int(float(j) / dt)
+            energyDist[timeind][energyind] += 1
+            # if(timeind < xlen):
+            #     energyDist[timeind][energyind] += 1
+                # energyDist[timeind][energyind] += cur_energy
+
+# tot_init_energy = 0.0
+# for i in range(len(energyDist[0])):
+#     tot_init_energy += energyDist[400][i]
+
+tot_init_energy = energyDist[1][0]
+
+# print("Total Initial Energy: " + str(0.001 * tot_init_energy))
+
+print("Plotting . . . ")
+print("Proportion of subgap phonons: " + str(float(numsubgap) / numLines))
+print("Total Subgap Energy: " + str(subgap_energy) + ", Total Energy: " + str(total_energy))
+print("Subgap Energy Fraction: " + str(float(subgap_energy) / total_energy))
+
+####################################################################
+# Plot phonon frequency histograms per energy at each time point.
+# Using Mira's pulse_data_analysis as template, turn this into a gif.
+
+start_time_interval=0
+frames=xlen
+framename=[]
+for index in range(start_time_interval,start_time_interval+frames):
+
+    ########################### First, create energy hist at start_time_interval.
+    fig1 = plt.figure()                 # Figure creation
+    ax1 = fig1.add_subplot(1, 1, 1)
+    ax1.set_xlim(45,largest_energy+1)
+    ax1.set_ylim(0,30)
+    ax1.set_title("Time Evolution of Phonons in TargetL")
+    energy_bin_x_data = np.arange(0, largest_energy+de, de) #Get energy bins
+    frequency_phonons_y_data = energyDist[index]    
+                                        # and freq for each bin at desired time
+
+    ax1.plot(energy_bin_x_data, frequency_phonons_y_data)
+    ax1.set_xlabel('Energy (meV)')
+    ax1.set_ylabel('Number of Phonons')
+
+    ########################### And save it to a "temp" folder.
+    if (not os.path.isdir("temp")): # Make temp folder if it doesn't 
+        os.mkdir("temp")            # already exist
+                                                    
+    name="temp/pic"+str(index)+".png"
+    fig1.savefig(name,dpi=150,facecolor='white',transparent=False,bbox_inches='tight')
+    framename.append(name)
+    plt.close()
+
+################################ Second, make a gif of the images in the temp folder    
+images = []
+for filename in framename:
+    images.append(imageio.imread(filename))
+duration = 0.25
+imageio.mimwrite("phonon_energy_hist"+".gif", images, duration=duration,
+                 loop=0)
