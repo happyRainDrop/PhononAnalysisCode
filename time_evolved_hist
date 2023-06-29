@@ -1,18 +1,3 @@
-##################################################
-#            time_evolved_hist.py                #
-##################################################
-# Prerequisites for running:
-#    Data/StepData.txt must exist
-#    temp folder should be emptied/deleted
-#        (Unexpected behavior may occur if not)
-# 
-# This script plots a histogram of phonon energies
-# in silicon at small time bins. The histogram from
-# each time bin is combined into a gif at the end
-# (phonon_energy_hist.gif). The snapshots of phonon
-# energy distributions at each time bin are stored
-# in the temp folder.
-
 from math import *
 import numpy as np
 import random
@@ -21,7 +6,7 @@ import imageio.v3
 import os
 
 ######### Here are parameters the user can tweak
-dt = 200   # Units: ??
+dt = 1000   # Units: ??
 de = 0.5    # Units: mEv, presumably
 largest_time = 10000   # Manually set this
         # because most of what happens later on
@@ -29,6 +14,7 @@ largest_time = 10000   # Manually set this
 
 ######## Here are constants the user shouldn't tweak
 gap_energy = 0.1805
+planck = 4.135667696 * 10**-15
 
 ######## Here are variables we fill later on
 numsubgap = 0
@@ -196,15 +182,16 @@ for index in range(start_time_interval,start_time_interval+frames):
     ########################### First, create energy hist at start_time_interval.
     fig1 = plt.figure()                 # Figure creation
     ax1 = fig1.add_subplot(1, 1, 1)
-    ax1.set_xlim(0,largest_energy+1)
+    ax1.set_xlim(0,(largest_energy+1)/ (10**3) / planck / (10**12))
     ax1.set_ylim(0,maxPhononNumInBin+1)
     ax1.set_title("Time Evolution of Phonons in TargetL")
     energy_bin_x_data = np.arange(largest_energy+de, 0, -de) #Get energy bins
+    energy_bin_x_data = energy_bin_x_data / (10**3) / planck / (10**12)
     frequency_phonons_y_data = energyDist[index]    
                                         # and freq for each bin at desired time
 
     ax1.plot(energy_bin_x_data, frequency_phonons_y_data)
-    ax1.set_xlabel('Energy (meV)')
+    ax1.set_xlabel('Frequency (THz)')
     ax1.set_ylabel('Number of Phonons')
 
     ########################### And save it to a "temp" folder.
